@@ -17,8 +17,8 @@ A WhatsApp chatbot built for KalviumLabs Forge April task. Integrates **Whapi** 
 ### 1. Clone & Install
 
 ```bash
-git clone <your-repo>
-cd ai-academy-whatsapp-bot
+git clone https://github.com/mahilmithranks/CourseMate-AI.git
+cd CourseMate-AI
 npm install
 ```
 
@@ -45,9 +45,22 @@ ngrok http 3000
 # Copy the https URL → paste into Whapi webhook settings
 ```
 
-### 4. Deploy
+### 4. Deploy (Render)
 
-Deploy to Railway / Render / Fly.io and set the public URL as your Whapi webhook.
+This backend is deployed on **[Render](https://render.com)**.
+
+1. Push your code to GitHub
+2. Go to [render.com](https://render.com) → **New** → **Web Service**
+3. Connect your GitHub repo (`mahilmithranks/CourseMate-AI`)
+4. Set:
+   - **Build Command**: `npm install`
+   - **Start Command**: `node index.js`
+   - **Environment**: Node
+5. Add all environment variables (`WHAPI_TOKEN`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENAI_API_KEY`)
+6. Deploy — Render gives you a public HTTPS URL
+7. Set that URL as your Whapi webhook: `https://your-app.onrender.com/webhook`
+
+> ⚠️ Free tier on Render **sleeps after 15 minutes** of inactivity. Use [UptimeRobot](https://uptimerobot.com) to ping `/webhook` every 10 minutes to keep it awake.
 
 ## Usage
 
