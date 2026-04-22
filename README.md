@@ -2,6 +2,16 @@
 
 A WhatsApp chatbot built for KalviumLabs Forge April task. Integrates **Whapi** (WhatsApp API) with a **multi-LLM fallback system** (Gemini → Groq → OpenAI → Rule-Based) to answer student queries about the AI Academy course.
 
+## 🔗 Live Links
+
+| | Link |
+|---|---|
+| 🚀 **Backend (Render)** | https://coursemate-ai-j4tm.onrender.com |
+| 💬 **Try on WhatsApp** | [Click to Chat](https://wa.me/919363978578?text=Start) |
+| 📦 **GitHub Repo** | https://github.com/mahilmithranks/CourseMate-AI |
+
+> Send `AI-Academy` in WhatsApp to activate the bot.
+
 ## Tech Stack
 
 - **Runtime**: Node.js 18+
@@ -58,9 +68,9 @@ This backend is deployed on **[Render](https://render.com)**.
    - **Environment**: Node
 5. Add all environment variables (`WHAPI_TOKEN`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENAI_API_KEY`)
 6. Deploy — Render gives you a public HTTPS URL
-7. Set that URL as your Whapi webhook: `https://your-app.onrender.com/webhook`
+7. Set that URL as your Whapi webhook: `https://coursemate-ai-j4tm.onrender.com/webhook`
 
-> ⚠️ Free tier on Render **sleeps after 15 minutes** of inactivity. Use [UptimeRobot](https://uptimerobot.com) to ping `/webhook` every 10 minutes to keep it awake.
+> ⚠️ Free tier on Render **sleeps after 15 minutes** of inactivity. Use [UptimeRobot](https://uptimerobot.com) to ping `https://coursemate-ai-j4tm.onrender.com/webhook` every 10 minutes to keep it awake.
 
 ## Usage
 
