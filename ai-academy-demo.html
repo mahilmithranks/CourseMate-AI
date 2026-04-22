@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Academy — WhatsApp Bot Demo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@400;600;800&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green: #25D366;
+    --green-dark: #128C7E;
+    --green-light: #DCF8C6;
+    --bubble-in: #ffffff;
+    --bubble-out: #DCF8C6;
+    --bg: #0a0f0d;
+    --panel: #111916;
+    --chat-bg: #0e1a16;
+    --border: rgba(37,211,102,0.15);
+    --text: #e8f5e9;
+    --muted: #6b8f78;
+    --accent: #25D366;
+  }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    gap: 24px;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(37,211,102,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37,211,102,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .header {
+    text-align: center;
+    z-index: 1;
+  }
+
+  .header-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    opacity: 0.8;
+  }
+
+  .header h1 {
+    font-size: clamp(24px, 5vw, 42px);
+    font-weight: 800;
+    background: linear-gradient(135deg, #25D366, #a8e6c0, #25D366);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.1;
+  }
+
+  .header p {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+
+  /* Main layout */
+  .demo-wrap {
+    display: flex;
+    gap: 24px;
+    width: 100%;
+    max-width: 960px;
+    z-index: 1;
+    align-items: flex-start;
+  }
+
+  /* Phone frame */
+  .phone {
+    flex: 0 0 320px;
+    background: #0a0f0d;
+    border-radius: 40px;
+    border: 2px solid var(--border);
+    box-shadow:
+      0 0 0 1px rgba(37,211,102,0.08),
+      0 40px 80px rgba(0,0,0,0.6),
+      inset 0 1px 0 rgba(255,255,255,0.05);
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Notch */
+  .phone-notch {
+    height: 28px;
+    background: #070c09;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .phone-notch::before {
+    content: '';
+    width: 60px; height: 6px;
+    background: #1a2620;
+    border-radius: 3px;
+  }
+
+  /* WA Header */
+  .wa-header {
+    background: var(--green-dark);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .wa-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #25D366, #075E54);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 800;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .wa-info { flex: 1; }
+  .wa-name { font-size: 14px; font-weight: 600; color: white; }
+  .wa-status { font-size: 11px; color: rgba(255,255,255,0.7); }
+
+  .wa-dots { display: flex; gap: 4px; }
+  .wa-dots span { width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,0.7); }
+
+  /* Chat area */
+  .chat-area {
+    background: var(--chat-bg);
+    min-height: 380px;
+    max-height: 380px;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+  }
+
+  /* WA wallpaper pattern */
+  .chat-area::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Ctext x='10' y='35' font-size='20' opacity='0.03' fill='%2325D366'%3E🌿%3C/text%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+
+  .bubble {
+    max-width: 80%;
+    padding: 7px 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.45;
+    position: relative;
+    animation: bubbleIn 0.25s ease;
+    word-break: break-word;
+    white-space: pre-wrap;
+    z-index: 1;
+  }
+
+  @keyframes bubbleIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .bubble.in {
+    background: var(--bubble-in);
+    color: #111;
+    align-self: flex-start;
+    border-top-left-radius: 2px;
+  }
+
+  .bubble.out {
+    background: var(--bubble-out);
+    color: #111;
+    align-self: flex-end;
+    border-top-right-radius: 2px;
+  }
+
+  .bubble-time {
+    position: absolute;
+    bottom: 3px;
+    right: 8px;
+    font-size: 9px;
+    color: #999;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .bubble.out .bubble-time { color: #4a8c68; }
+
+  .typing-indicator {
+    display: none;
+    align-self: flex-start;
+    background: white;
+    border-radius: 8px;
+    border-top-left-radius: 2px;
+    padding: 10px 14px;
+    z-index: 1;
+  }
+  .typing-indicator.show { display: flex; gap: 4px; align-items: center; }
+  .typing-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #aaa;
+    animation: typingPulse 1.2s infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typingPulse {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  /* Input area */
+  .wa-input {
+    background: #1a2620;
+    padding: 8px 10px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    border-top: 1px solid rgba(37,211,102,0.1);
+  }
+
+  .wa-text-input {
+    flex: 1;
+    background: #243020;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 14px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'Syne', sans-serif;
+    outline: none;
+  }
+  .wa-text-input::placeholder { color: #4a6b56; }
+  .wa-text-input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .wa-send {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--green);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, transform 0.1s;
+    flex-shrink: 0;
+  }
+  .wa-send:hover { background: #1db954; }
+  .wa-send:active { transform: scale(0.92); }
+  .wa-send:disabled { background: #2a4a36; cursor: not-allowed; }
+  .wa-send svg { width: 16px; height: 16px; fill: white; }
+
+  /* Info panel */
+  .info-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+  }
+
+  .card-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .module-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .module-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: rgba(37,211,102,0.04);
+    border: 1px solid transparent;
+    transition: border-color 0.2s;
+  }
+  .module-row:hover { border-color: var(--border); }
+
+  .module-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    width: 20px;
+    flex-shrink: 0;
+  }
+
+  .module-info { flex: 1; }
+  .module-name { font-size: 12px; font-weight: 600; color: var(--text); }
+  .module-units { font-size: 11px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+
+  .badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .badge.free { background: rgba(37,211,102,0.15); color: var(--accent); }
+  .badge.paid { background: rgba(255,170,0,0.12); color: #ffaa00; }
+
+  .quick-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .quick-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .quick-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(37,211,102,0.06);
+  }
+  .quick-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2s infinite;
+    flex-shrink: 0;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .flow-steps { display: flex; flex-direction: column; gap: 0; }
+  .flow-step {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 6px 0;
+  }
+  .flow-icon {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    width: 20px;
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+  .flow-text { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .flow-text strong { color: var(--text); }
+
+  @media (max-width: 680px) {
+    .demo-wrap { flex-direction: column; align-items: center; }
+    .phone { flex: none; width: 100%; max-width: 340px; }
+    .info-panel { width: 100%; max-width: 340px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-tag">KalviumLabs Forge April</div>
+  <h1>AI Academy Bot</h1>
+  <p>// WhatsApp × Claude LLM — Live Demo</p>
+</div>
+
+<div class="demo-wrap">
+
+  <!-- Phone -->
+  <div class="phone">
+    <div class="phone-notch"></div>
+    <div class="wa-header">
+      <div class="wa-avatar">AI</div>
+      <div class="wa-info">
+        <div class="wa-name">AI Academy</div>
+        <div class="wa-status" id="waStatus">online</div>
+      </div>
+      <div class="wa-dots"><span></span><span></span><span></span></div>
+    </div>
+
+    <div class="chat-area" id="chatArea">
+      <!-- messages go here -->
+    </div>
+
+    <div class="wa-input">
+      <input class="wa-text-input" id="msgInput" placeholder='Type "AI-Academy" to start…' />
+      <button class="wa-send" id="sendBtn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Info Panel -->
+  <div class="info-panel">
+
+    <!-- Course info -->
+    <div class="card">
+      <div class="card-title">Course Modules</div>
+      <div class="module-list">
+        <div class="module-row">
+          <div class="module-num">01</div>
+          <div class="module-info">
+            <div class="module-name">Introduction to LLM</div>
+            <div class="module-units">10 Learning Units</div>
+          </div>
+          <span class="badge free">FREE</span>
+        </div>
+        <div class="module-row">
+          <div class="module-num">02</div>
+          <div class="module-info">
+            <div class="module-name">Basics of Prompting</div>
+            <div class="module-units">12 Learning Units</div>
+          </div>
+          <span class="badge free">FREE</span>
+        </div>
+        <div class="module-row">
+          <div class="module-num">03</div>
+          <div class="module-info">
+            <div class="module-name">Deep Dive into LLM Integration</div>
+            <div class="module-units">15 Learning Units</div>
+          </div>
+          <span class="badge paid">₹499</span>
+        </div>
+        <div class="module-row">
+          <div class="module-num">04</div>
+          <div class="module-info">
+            <div class="module-name">Advanced LLM & Agentic AI</div>
+            <div class="module-units">17 Learning Units</div>
+          </div>
+          <span class="badge paid">₹499</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick prompts -->
+    <div class="card">
+      <div class="card-title">Quick Prompts</div>
+      <div class="quick-btns" id="quickBtns">
+        <button class="quick-btn" onclick="quickSend('AI-Academy')">AI-Academy</button>
+        <button class="quick-btn" onclick="quickSend('What modules are free?')">Free modules?</button>
+        <button class="quick-btn" onclick="quickSend('How much does it cost?')">Pricing?</button>
+        <button class="quick-btn" onclick="quickSend('How do I get a certificate?')">Certificate?</button>
+        <button class="quick-btn" onclick="quickSend('What will I learn in Module 4?')">Module 4?</button>
+        <button class="quick-btn" onclick="quickSend('How do I enroll?')">Enroll?</button>
+      </div>
+    </div>
+
+    <!-- Flow card -->
+    <div class="card">
+      <div class="card-title"><span class="status-dot"></span> Bot Flow</div>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="flow-icon">01</div>
+          <div class="flow-text">User sends <strong>"AI-Academy"</strong> → session activated</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-icon">02</div>
+          <div class="flow-text">Bot greets and waits for query</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-icon">03</div>
+          <div class="flow-text">Query + history sent to <strong>Claude API</strong> with course context</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-icon">04</div>
+          <div class="flow-text">Reply queued through <strong>anti-ban throttler</strong></div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-icon">05</div>
+          <div class="flow-text"><strong>Whapi</strong> delivers message to WhatsApp</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+let sessionActive = false;
+let history = [];
+let busy = false;
+
+const COURSE_CONTEXT = `You are a helpful assistant for the AI Academy course offered by KalviumLabs.
+Always be friendly, concise, and guide users toward enrollment when appropriate.
+
+COURSE DETAILS:
+- Module 1: Introduction to LLM — 10 Learning Units (FREE)
+- Module 2: Basics of Prompting — 12 Learning Units (FREE)
+- Module 3: Deep Dive into LLM Integration — 15 Learning Units (PAID)
+- Module 4: Advanced LLM Concepts and Agentic AI — 17 Learning Units (PAID)
+
+ACCESS & PRICING:
+- Module 1 and Module 2 are completely FREE.
+- Module 3 and Module 4 require a one-time payment of Rs. 499.
+- Payment page: https://ai-academy.example.com/pricing
+- After completing all 4 modules, users can download a completion certificate.
+
+RULES:
+- Only answer questions related to the AI Academy course.
+- If a question is unrelated, politely redirect to course topics.
+- Keep responses under 250 words.
+- Use plain text only — no markdown, no asterisks, no bullet symbols. Use dashes or numbers for lists.`;
+
+// ─── DOM helpers ─────────────────────────────────────────────────────────────
+const chatArea = document.getElementById('chatArea');
+const msgInput = document.getElementById('msgInput');
+const sendBtn  = document.getElementById('sendBtn');
+const waStatus = document.getElementById('waStatus');
+
+function getTime() {
+  const d = new Date();
+  return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+}
+
+function addBubble(text, dir) {
+  const b = document.createElement('div');
+  b.className = `bubble ${dir}`;
+  b.textContent = text;
+  const t = document.createElement('span');
+  t.className = 'bubble-time';
+  t.textContent = getTime() + (dir === 'out' ? ' ✓✓' : '');
+  b.appendChild(t);
+  chatArea.appendChild(b);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  return b;
+}
+
+function showTyping() {
+  const ind = document.createElement('div');
+  ind.className = 'typing-indicator show';
+  ind.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  chatArea.appendChild(ind);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  return ind;
+}
+
+function setLoading(v) {
+  busy = v;
+  msgInput.disabled = v;
+  sendBtn.disabled  = v;
+  document.querySelectorAll('.quick-btn').forEach(b => b.disabled = v);
+  waStatus.textContent = v ? 'typing…' : 'online';
+}
+
+// ─── Core logic ───────────────────────────────────────────────────────────────
+async function handleMessage(text) {
+  if (busy || !text.trim()) return;
+
+  addBubble(text, 'out');
+  setLoading(true);
+
+  // Trigger check
+  if (text.trim().toLowerCase() === 'ai-academy') {
+    sessionActive = true;
+    history = [];
+    await sleep(900);
+    const ind = showTyping();
+    await sleep(1400);
+    ind.remove();
+    addBubble('Thank you for reaching out to the AI Academy! How can I help you today?', 'in');
+    setLoading(false);
+    msgInput.placeholder = 'Ask about the course…';
+    return;
+  }
+
+  if (!sessionActive) {
+    await sleep(700);
+    const ind = showTyping();
+    await sleep(1000);
+    ind.remove();
+    addBubble('Hi! Please send "AI-Academy" first to get started.', 'in');
+    setLoading(false);
+    return;
+  }
+
+  // LLM call
+  history.push({ role: 'user', content: text });
+
+  const ind = showTyping();
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 400,
+        system: COURSE_CONTEXT,
+        messages: history
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || 'Sorry, something went wrong.';
+    history.push({ role: 'assistant', content: reply });
+    if (history.length > 20) history = history.slice(-20);
+    ind.remove();
+    addBubble(reply, 'in');
+  } catch (e) {
+    ind.remove();
+    addBubble('Sorry, I could not reach the AI right now. Please try again.', 'in');
+  }
+  setLoading(false);
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function sendMessage() {
+  const text = msgInput.value.trim();
+  if (!text) return;
+  msgInput.value = '';
+  handleMessage(text);
+}
+
+function quickSend(text) {
+  if (busy) return;
+  msgInput.value = text;
+  sendMessage();
+}
+
+msgInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendMessage();
+});
+
+// Initial hint
+setTimeout(() => {
+  addBubble('👋 Send "AI-Academy" to get started!', 'in');
+}, 600);
+</script>
+
+</body>
+</html>
